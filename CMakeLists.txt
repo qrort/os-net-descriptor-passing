@@ -9,6 +9,6 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_executable(echo-server server/main.cpp server/server.cpp utils.cpp)
+add_executable(echo-client client/client.cpp client/main.cpp utils.cpp)
 
-add_executable(echo-client client/main.cpp client/client.cpp utils.cpp)
+add_executable(echo-server server/server.cpp server/main.cpp utils.cpp)

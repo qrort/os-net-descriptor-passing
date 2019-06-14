@@ -1,72 +1,37 @@
+
 #include "client.h"
-#include "raii_socket.h"
 #include "utils.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <string>
+#include <cstring>
+#include <iostream>
 
-const size_t client::BUFFER_SIZE = 1024;
-
-client::client(char* socket_name) {
+client::client(char* socket_name)
+        : server_addr(socket_name)
+        , client_socket()
+{
+    struct sockaddr_un address;
     memset(&address, 0, sizeof(sockaddr_un));
     address.sun_family = AF_UNIX;
     strncpy(address.sun_path, socket_name, sizeof(address.sun_path) - 1);
+
+    client_socket.connect(address);
+    std::cout << "Connected to server" << std::endl;
 }
 
-const char* SOCKET_FILE = "/tmp/os-net-descriptor-passing";
+void client::launch() {
+    int in_fd = client_socket.get_sockfd();
+    int out_fd = client_socket.get_sockfd();
 
+    while (true) {
+        std::string msg;
+        std::cin >> msg;
+        if (msg == "exit" || std::cin.eof()) {
+            break;
+        }
 
-raii_socket client::open_connection() {
-    raii_socket socket;
+        write_message(out_fd, msg);
+        std::cout << "Client sent " << msg << '\n';
 
-    sockaddr_un addr{};
-    address.sun_family = AF_UNIX;
-    strcpy(address.sun_path, SOCKET_FILE);
-
-
-    if (connect(socket.get_fd(), reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) == -1) {
-        throw std::runtime_error("Can't connect to the server");
+        std::string response = read_message(in_fd);
+        std::cout << "Client received " << response << '\n';
     }
-
-    return sfd;
-}
-
-std::string client::send_and_receive(std::string const& message) {
-    char buffer[BUFFER_SIZE + 1];
-    size_t ptr = 0;
-    std::string result;
-
-    while (ptr < message.size()) {
-         raii_socket data_socket;
-        ssize_t ret = connect(data_socket.get_fd(), reinterpret_cast<sockaddr*>(&address), sizeof(sockaddr));
-        if (ret == -1) {
-            throw_error("Unable to connect to server");
-        }
-
-        size_t len = std::min(BUFFER_SIZE, message.size() - ptr);
-        ret = write(data_socket.get_fd(), message.c_str() + ptr, len);
-        if (ret == -1) {
-            throw_error("Unable to send data");
-        }
-        std::string request = message.substr(ptr, ret);
-        std::cout << "Client sent " << request << std::endl;
-        ptr += ret;
-
-        int ptr2 = 0;
-        while (ptr2 < request.size()) {
-            len = std::min(BUFFER_SIZE, message.size() - ptr2);
-
-            ret = read(data_socket.get_fd(), buffer, len);
-            buffer[BUFFER_SIZE] = 0;
-            if (ret == -1) {
-                throw_error("Unable to receive data");
-            }
-            std::string response(buffer, buffer + ret);
-            std::cout << "Client received " << response << "\n" <<  std::endl;
-
-            ptr2 += ret;
-            result += response;
-        }
-    }
-    return result;
 }

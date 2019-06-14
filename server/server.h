@@ -1,12 +1,11 @@
 #ifndef OS_NET_SERVER_H
 #define OS_NET_SERVER_H
-#include "../raii_socket.h"
-#include <sys/un.h>
+
+
+#include "raii_socket.h"
 
 class server {
 public:
-    static const int LISTEN_TIMEOUT;
-    static const size_t BUFFER_SIZE;
     server() = delete;
     server(char* socket_name);
     ~server();
@@ -14,10 +13,10 @@ public:
     server& operator=(const server& other) = delete;
     void launch();
 private:
-    raii_socket socket;
-    struct sockaddr_un address;
-    std::string socket_binding;
+    std::string server_addr;
+    raii_socket server_socket;
     bool down = false;
+    int pipe_in[2] = {-1, -1}, pipe_out[2] = {-1, -1};
 };
 
 
